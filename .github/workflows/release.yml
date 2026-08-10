@@ -1,0 +1,93 @@
+name: Build & Release Clipper AI Desktop
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Multiplatform Binaries
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: ClipperAI-Desktop-Windows-x64.zip
+            asset_path: dist/ClipperAI-Desktop-Windows-x64.zip
+          - os: macos-latest
+            artifact_name: ClipperAI-Desktop-macOS.zip
+            asset_path: dist/ClipperAI-Desktop-macOS.zip
+          - os: ubuntu-latest
+            artifact_name: ClipperAI-Desktop-Linux-x64.tar.gz
+            asset_path: dist/ClipperAI-Desktop-Linux-x64.tar.gz
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build Windows Binary
+        if: runner.os == 'Windows'
+        run: |
+          pyinstaller --noconfirm --onedir --windowed --name "ClipperAIDesktop" --icon="assets/ninja_logo.jpg" main.py
+          powershell Compress-Archive -Path dist/ClipperAIDesktop/* -DestinationPath dist/ClipperAI-Desktop-Windows-x64.zip
+
+      - name: Build macOS Binary
+        if: runner.os == 'macOS'
+        run: |
+          pyinstaller --noconfirm --onedir --windowed --name "ClipperAIDesktop" --icon="assets/ninja_logo.jpg" main.py
+          cd dist && zip -r ClipperAI-Desktop-macOS.zip ClipperAIDesktop.app
+
+      - name: Build Linux Binary
+        if: runner.os == 'Linux'
+        run: |
+          pyinstaller --noconfirm --onedir --windowed --name "ClipperAIDesktop" --icon="assets/ninja_logo.jpg" main.py
+          cd dist && tar -czvf ClipperAI-Desktop-Linux-x64.tar.gz ClipperAIDesktop
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.asset_path }}
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release_assets
+
+      - name: Create GitHub Release & Attach Binaries
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release_assets/ClipperAI-Desktop-Windows-x64.zip/ClipperAI-Desktop-Windows-x64.zip
+            release_assets/ClipperAI-Desktop-macOS.zip/ClipperAI-Desktop-macOS.zip
+            release_assets/ClipperAI-Desktop-Linux-x64.tar.gz/ClipperAI-Desktop-Linux-x64.tar.gz
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

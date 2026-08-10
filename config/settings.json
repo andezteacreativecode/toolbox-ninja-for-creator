@@ -1,0 +1,24 @@
+{
+  "active_provider": "9router",
+  "providers": {
+    "ollama": {
+      "name": "Ollama (Lokal)",
+      "base_url": "http://localhost:11434",
+      "model": "gemma2:2b"
+    },
+    "9router": {
+      "name": "9router / OpenRouter",
+      "base_url": "http://localhost:20128/v1",
+      "api_key": "sk-5f6c5f55cbe25eda-jzwvpx-6227afee",
+      "model": "kc/anthropic/claude-opus-4-20250514"
+    }
+  },
+  "clip_settings": {
+    "target_duration": 30,
+    "num_clips": 3,
+    "output_format": "mp4",
+    "output_dir": "output_clips",
+    "aspect_ratio": "9:16",
+    "add_subtitles": true
+  }
+}
