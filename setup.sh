@@ -13,14 +13,31 @@ cd "$SCRIPT_DIR"
 
 # 1. Cek & Install System Dependencies (Python3, venv, ffmpeg, curl, git)
 echo "🔍 [1/5] Memeriksa dependensi sistem..."
-if ! command -v python3 &> /dev/null; then
-    echo "⚠️ Python 3 belum terinstall. Menginstall Python 3..."
-    sudo apt update && sudo apt install -y python3 python3-venv python3-pip ffmpeg curl git
+if ! command -v python3 &> /dev/null || ! command -v git &> /dev/null; then
+    echo "⚠️ Memasang dependensi dasar (Python 3, Git, FFmpeg, Curl)..."
+    sudo apt update && sudo apt install -y python3 python3-venv python3-pip ffmpeg curl git unzip
 fi
 
 if ! command -v ffmpeg &> /dev/null; then
     echo "⚠️ FFmpeg belum terinstall. Menginstall FFmpeg..."
     sudo apt update && sudo apt install -y ffmpeg
+fi
+
+# 1.5. Cek & Unduh Kode Proyek jika setup.sh dijalankan terpisah (standalone)
+if [ ! -f "requirements.txt" ]; then
+    echo "📦 Kode aplikasi Clipper AI belum ada di folder ini."
+    echo "📥 Mengunduh proyek Clipper AI Desktop dari GitHub..."
+    if command -v git &> /dev/null; then
+        git clone https://github.com/andezteacreativecode/toolbox-ninja-for-creator.git clipper_desktop
+        cd clipper_desktop
+        SCRIPT_DIR="$(pwd)"
+    else
+        curl -sL https://github.com/andezteacreativecode/toolbox-ninja-for-creator/archive/refs/heads/main.zip -o clipper.zip
+        unzip -q clipper.zip
+        cd toolbox-ninja-for-creator-main
+        SCRIPT_DIR="$(pwd)"
+    fi
+    echo "✅ Berhasil mengunduh kode proyek ke: $SCRIPT_DIR"
 fi
 
 # 2. Cek & Install Ollama Otomatis
@@ -78,5 +95,5 @@ echo "🎉 Pemasangan Selesai 100%!"
 echo "=========================================================="
 echo "Anda dapat menjalankan aplikasi dengan:"
 echo "1. Klik ganda ikon 'Clipper AI Desktop' di App Menu / Launcher"
-echo "2. Atau jalankan perintah: ./run.sh"
+echo "2. Atau jalankan perintah: cd $SCRIPT_DIR && ./run.sh"
 echo "=========================================================="

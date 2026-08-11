@@ -12,6 +12,7 @@ requests>=2.31.0
 openai-whisper>=20231117
 faster-whisper>=1.0.0
 mediapipe==0.10.14
+matplotlib>=3.7.0
 fonttools>=4.47.0
 torch
 torchaudio
