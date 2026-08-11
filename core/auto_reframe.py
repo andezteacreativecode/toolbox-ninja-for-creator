@@ -1,16 +1,26 @@
+import sys
+import os
 import cv2
-import mediapipe as mp
 import numpy as np
+
+# Fix mediapipe model path when running inside a PyInstaller .exe bundle
+if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+    os.environ['MEDIAPIPE_RESOURCE_DIR'] = os.path.join(sys._MEIPASS, 'mediapipe', 'modules')
+
+import mediapipe as mp
 
 class AutoReframe:
     def __init__(self, aspect_ratio="9:16"):
         self.aspect_ratio = aspect_ratio
         
-        # Initialize MediaPipe Face Detection
-        self.mp_face_detection = mp.solutions.face_detection
-        self.face_detection = self.mp_face_detection.FaceDetection(
-            model_selection=1, min_detection_confidence=0.5
-        )
+        try:
+            # Initialize MediaPipe Face Detection
+            self.mp_face_detection = mp.solutions.face_detection
+            self.face_detection = self.mp_face_detection.FaceDetection(
+                model_selection=1, min_detection_confidence=0.5
+            )
+        except Exception:
+            self.face_detection = None
 
     def calculate_crop_window(self, video_path: str, start_time: float, end_time: float):
         """
@@ -19,6 +29,20 @@ class AutoReframe:
         """
         if self.aspect_ratio != "9:16":
             return None # We only auto-reframe for vertical video
+
+        # If mediapipe failed to initialize (e.g. missing model files in .exe bundle), fall back to center crop
+        if self.face_detection is None:
+            cap = cv2.VideoCapture(video_path)
+            if not cap.isOpened():
+                return None
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            cap.release()
+            target_width = int(height * 9 / 16)
+            if target_width > width:
+                target_width = width
+            x_crop = (width - target_width) // 2
+            return f"crop={target_width}:{height}:{x_crop}:0"
 
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():

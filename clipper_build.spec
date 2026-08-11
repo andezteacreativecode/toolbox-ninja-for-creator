@@ -1,16 +1,29 @@
 # -*- mode: python ; coding: utf-8 -*-
 import sys
 import os
+import site
 from pathlib import Path
 
 block_cipher = None
 
 project_dir = os.path.abspath(os.path.dirname('__file__'))
 
+# Auto-detect mediapipe package directory and include its modules folder
+def find_mediapipe_modules():
+    try:
+        import mediapipe
+        mp_dir = Path(mediapipe.__file__).parent
+        modules_dir = mp_dir / 'modules'
+        if modules_dir.exists():
+            return [(str(modules_dir), 'mediapipe/modules')]
+    except Exception:
+        pass
+    return []
+
 added_files = [
     ('assets', 'assets'),
     ('config', 'config'),
-]
+] + find_mediapipe_modules()
 
 hidden_imports = [
     'PyQt6',

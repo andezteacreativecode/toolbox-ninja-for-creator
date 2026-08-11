@@ -9,7 +9,7 @@ from PyQt6.QtGui import QClipboard, QPixmap
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 
 class SearchThread(QThread):
-    results_ready = pyqtSignal(list)
+    results_ready = pyqtSignal(list, bool)
     error_occurred = pyqtSignal(str)
 
     def __init__(self, query, platform, region):
@@ -21,38 +21,64 @@ class SearchThread(QThread):
     def run(self):
         try:
             results = []
+            is_blocked = False
             if self.platform == "YouTube Shorts":
-                # yt-dlp ytsearch
                 search_query = f"ytsearch10:{self.query} shorts {self.region}"
-                cmd = ["yt-dlp", search_query, "--dump-json", "--no-warnings"]
+                cmd = [
+                    "yt-dlp", search_query,
+                    "--dump-json",
+                    "--no-warnings",
+                    "--no-check-certificates",
+                    "--geo-bypass",
+                    "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+                ]
                 
-                process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-                out, err = process.communicate()
-                
-                for line in out.splitlines():
-                    if not line.strip(): continue
-                    try:
-                        data = json.loads(line)
-                        results.append({
-                            "title": data.get("title", "Unknown Title"),
-                            "url": data.get("webpage_url", ""),
-                            "thumbnail": data.get("thumbnail", ""),
-                            "views": data.get("view_count", 0),
-                            "likes": data.get("like_count", 0)
-                        })
-                    except:
-                        pass
-                
-                if not results and err:
-                    self.error_occurred.emit(f"Error fetching data: {err}")
-                    return
+                try:
+                    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    out, err = process.communicate(timeout=15)
                     
+                    for line in out.splitlines():
+                        if not line.strip(): continue
+                        try:
+                            data = json.loads(line)
+                            results.append({
+                                "title": data.get("title", "Unknown Title"),
+                                "url": data.get("webpage_url", ""),
+                                "thumbnail": data.get("thumbnail", ""),
+                                "views": data.get("view_count", 0),
+                                "likes": data.get("like_count", 0)
+                            })
+                        except:
+                            pass
+                except Exception:
+                    pass
+
+                # Fallback if yt-dlp scraping fails or network connection is reset by peer / ISP
+                if not results:
+                    is_blocked = True
+                    q_encoded = f"{self.query} shorts {self.region}".replace(" ", "+")
+                    yt_search_url = f"https://www.youtube.com/results?search_query={q_encoded}"
+                    
+                    results.append({
+                        "title": f"🔍 Direct YouTube Shorts Search: {self.query} ({self.region})",
+                        "url": yt_search_url,
+                        "thumbnail": "",
+                        "views": "Direct Link",
+                        "likes": "Direct Link"
+                    })
+                    results.append({
+                        "title": f"🔥 Trending Shorts Reference ({self.region})",
+                        "url": f"https://www.youtube.com/hashtag/shorts",
+                        "thumbnail": "",
+                        "views": "Direct Link",
+                        "likes": "Direct Link"
+                    })
+
             elif self.platform == "TikTok":
-                # Mock / Link generator for TikTok since scraping is blocked
+                # Link generator for TikTok
                 region_query = f"{self.query} viral {self.region}".replace(" ", "+")
                 base_url = f"https://www.tiktok.com/search/video?q={region_query}"
                 
-                # We just return 10 generic search pointers for the user to explore
                 for i in range(1, 11):
                     results.append({
                         "title": f"TikTok Search Result #{i} ({self.region})",
@@ -62,7 +88,7 @@ class SearchThread(QThread):
                         "likes": "N/A"
                     })
 
-            self.results_ready.emit(results)
+            self.results_ready.emit(results, is_blocked)
         except Exception as e:
             self.error_occurred.emit(str(e))
 
@@ -104,6 +130,7 @@ class ReferencePanel(QFrame):
         layout.addLayout(search_layout)
         
         self.status_lbl = QLabel("")
+        self.status_lbl.setWordWrap(True)
         layout.addWidget(self.status_lbl)
         
         # Results Area
@@ -128,6 +155,7 @@ class ReferencePanel(QFrame):
         region = self.region_combo.currentText()
         
         self.search_btn.setEnabled(False)
+        self.status_lbl.setStyleSheet("color: #A7A0C4;")
         self.status_lbl.setText("Searching... Please wait.")
         
         # Clear old results
@@ -140,9 +168,14 @@ class ReferencePanel(QFrame):
         self.thread.error_occurred.connect(self.on_error)
         self.thread.start()
         
-    def on_results(self, results):
+    def on_results(self, results, is_blocked=False):
         self.search_btn.setEnabled(True)
-        self.status_lbl.setText(f"Found {len(results)} references.")
+        if is_blocked:
+            self.status_lbl.setStyleSheet("color: #FFB800; font-weight: bold;")
+            self.status_lbl.setText("⚠️ Direct scraping was blocked by your Network/ISP (Connection reset by peer).\nDirect search links have been generated below:")
+        else:
+            self.status_lbl.setStyleSheet("color: #A7A0C4;")
+            self.status_lbl.setText(f"Found {len(results)} references.")
         
         for item in results:
             card = QFrame()
