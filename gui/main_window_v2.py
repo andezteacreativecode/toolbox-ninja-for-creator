@@ -173,9 +173,15 @@ class PipelineThread(QThread):
 
             self.progress_signal.emit("Extracting audio and transcribing...", 0.25)
             transcriber = FasterWhisperTranscriber()
+            lang_setting = self.subtitle_settings.get("language", "auto") if self.subtitle_settings else "auto"
+            target_lang = None if lang_setting == "auto" else lang_setting
+            task_setting = "translate" if lang_setting == "en" else "transcribe"
+
             segments = transcriber.transcribe(
                 video_path,
                 model_size="base",
+                language=target_lang,
+                task=task_setting,
                 progress_callback=lambda msg: self.progress_signal.emit(msg, 0.40)
             )
 

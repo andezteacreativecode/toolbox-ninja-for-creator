@@ -40,7 +40,17 @@ class SubtitleSettingsDialog(QDialog):
         # Language
         self.lang_cb = QComboBox()
         self.lang_cb.addItems(["Auto Detect", "Indonesia (id)", "English (en)", "Japanese (ja)"])
-        # map to settings...
+        lang_code = self.settings.get("language", "auto")
+        if lang_code == "auto":
+            self.lang_cb.setCurrentIndex(0)
+        elif lang_code == "id":
+            self.lang_cb.setCurrentIndex(1)
+        elif lang_code == "en":
+            self.lang_cb.setCurrentIndex(2)
+        elif lang_code == "ja":
+            self.lang_cb.setCurrentIndex(3)
+        else:
+            self.lang_cb.setCurrentIndex(0)
         form.addRow("Language:", self.lang_cb)
         
         # Font Family

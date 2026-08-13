@@ -19,7 +19,7 @@ class FasterWhisperTranscriber:
         subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
         return str(audio_path)
 
-    def transcribe(self, video_path: str, model_size: str = "base", progress_callback=None):
+    def transcribe(self, video_path: str, model_size: str = "base", language: str = None, task: str = "transcribe", progress_callback=None):
         if progress_callback:
             progress_callback("Mengekstrak audio dari video...")
         audio_path = self.extract_audio(video_path)
@@ -43,7 +43,17 @@ class FasterWhisperTranscriber:
                 pass
 
             model = WhisperModel(model_size, device=device, compute_type=compute_type)
-            segments, info = model.transcribe(audio_path, beam_size=5, word_timestamps=True)
+
+            transcribe_kwargs = {
+                "beam_size": 5,
+                "word_timestamps": True
+            }
+            if language and language != "auto":
+                transcribe_kwargs["language"] = language
+            if task:
+                transcribe_kwargs["task"] = task
+
+            segments, info = model.transcribe(audio_path, **transcribe_kwargs)
 
             formatted_segments = []
             for segment in segments:

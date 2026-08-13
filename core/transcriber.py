@@ -20,7 +20,7 @@ class VideoTranscriber:
         subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
         return str(audio_path)
 
-    def transcribe(self, video_path: str, model_size: str = "base", progress_callback=None) -> List[Dict[str, Any]]:
+    def transcribe(self, video_path: str, model_size: str = "base", language: str = None, task: str = "transcribe", progress_callback=None) -> List[Dict[str, Any]]:
         """
         Extract audio and run Whisper transcription.
         Returns list of dict: [{'start': 0.0, 'end': 4.5, 'text': 'Hello world'}]
@@ -35,7 +35,12 @@ class VideoTranscriber:
         try:
             import whisper
             model = whisper.load_model(model_size)
-            result = model.transcribe(audio_path, language="id", fp16=False)
+            transcribe_kwargs = {"fp16": False}
+            if language and language != "auto":
+                transcribe_kwargs["language"] = language
+            if task:
+                transcribe_kwargs["task"] = task
+            result = model.transcribe(audio_path, **transcribe_kwargs)
             
             segments = []
             for seg in result.get("segments", []):

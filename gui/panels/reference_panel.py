@@ -172,7 +172,7 @@ class ReferencePanel(QFrame):
         self.search_btn.setEnabled(True)
         if is_blocked:
             self.status_lbl.setStyleSheet("color: #FFB800; font-weight: bold;")
-            self.status_lbl.setText("⚠️ Direct scraping was blocked by your Network/ISP (Connection reset by peer).\nDirect search links have been generated below:")
+            self.status_lbl.setText("⚠️ YouTube is currently inaccessible on this network (connection blocked at network/firewall level).\nDirect search links have been generated below — click 'Open in Browser' to search YouTube manually:")
         else:
             self.status_lbl.setStyleSheet("color: #A7A0C4;")
             self.status_lbl.setText(f"Found {len(results)} references.")
