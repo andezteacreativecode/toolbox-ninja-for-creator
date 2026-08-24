@@ -724,7 +724,7 @@ class MainWindowV2(QMainWindow):
             self,
             "About Toolbox Ninja AI Desktop",
             "<h3>🥷 Toolbox Ninja AI Desktop</h3>"
-            "<p><b>Version 1.0.3</b> (Build 100 - Initial Release)</p>"
+            "<p><b>Version 1.0.5</b> (Build 100 - Initial Release)</p>"
             "<p>All-in-one AI creation suite for creators — Clipper AI (Viral Moment Detector), "
             "Voiceover & Audio Studio, and AI Thumbnail Studio.</p>"
             "<br/>"

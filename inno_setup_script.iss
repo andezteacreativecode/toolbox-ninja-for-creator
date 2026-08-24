@@ -2,7 +2,7 @@
 ; Compatible with Inno Setup 6.x
 
 #define MyAppName "Clipper AI Desktop"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.5"
 #define MyAppPublisher "Toolbox Ninja AI"
 #define MyAppExeName "ClipperAIDesktop.exe"
 
