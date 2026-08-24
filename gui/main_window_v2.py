@@ -766,9 +766,13 @@ class MainWindowV2(QMainWindow):
             self.results_lbl.show()
 
     def start_processing(self):
-        source = getattr(self, "current_file", None)
+        # Ambil source dari text input (mendukung local file dan YouTube/TikTok URL)
+        source = self.input_panel.get_source()
         if not source:
-            QMessageBox.warning(self, "Warning", "Please select a video first!")
+            # Fallback ke current_file jika text input kosong
+            source = getattr(self, "current_file", None)
+        if not source:
+            QMessageBox.warning(self, "Warning", "Please select a video file or paste a YouTube / TikTok URL first!")
             return
 
         for i in reversed(range(self.scroll_layout.count())):
